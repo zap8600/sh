@@ -5,11 +5,16 @@
 #include <string.h>
 
 int main() {
-    char* input;
-    while(1) {
-        int ch = EOF;
-        while((ch = fgetc(stdin)) != '\n') {
-            if(ch != EOF)
-        }
+    char* input = NULL;
+    long long int ccount = 0;
+    int ch = EOF;
+    while((ch = fgetc(stdin)) != '\n') {
+        input = (char*)realloc(input, ++ccount);
+        input[ccount - 1] = (char)ch;
     }
+    input = (char*)realloc(input, ccount + 1);
+    input[ccount] = '\0';
+    puts(input);
+    free(input);
+    return 0;
 }
