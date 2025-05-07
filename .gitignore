@@ -1,3 +1,4 @@
 sh
-sh.com
+sh.com*
+sh.aarch64.elf
 sh.exe
