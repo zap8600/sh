@@ -5,6 +5,18 @@
 #include <string.h>
 #include <stdbool.h>
 #include <signal.h>
+#include <setjmp.h>
+
+static sigjmp_buf env; // Never used setjmp and longjmp
+static volatile sig_atomic_t jumpact = 0;
+
+void siginthd(int signo) {
+    if(!jumpact) {
+        return;
+    }
+
+    siglongjmp(env, 1);
+}
 
 int main() {
     char* input = NULL;
@@ -12,16 +24,28 @@ int main() {
     unsigned long int ccount = 0;
     unsigned long int cmcount = 0;
     int ch = EOF;
-    signal(SIGINT, SIG_IGN);
+    struct sigaction s;
+    s.sa_handler = siginthd;
+    sigemptyset(&s.sa_mask);
+    s.sa_flags = SA_RESTART;
+    sigaction(SIGINT, &s, NULL);
     while(1) {
+        if(sigsetjmp(env, 1)) {
+            putchar('\n');
+        }
+        jumpact = 1;
         fputs("> ", stdout);
         while((ch = fgetc(stdin)) != '\n') {
+            if(ch == EOF) {
+                putchar('\n');
+                exit(1);
+            }
             input = (char*)realloc(input, ++ccount);
             input[ccount - 1] = (char)ch;
         }
         input = (char*)realloc(input, ccount + 1);
         input[ccount] = '\0';
-        char* parsed = strtok(input, " ");
+        char* parsed = strtok(input, " "); // First time using this too
         while(parsed) {
             command = (char**)realloc(command, ++cmcount * sizeof(char*));
             command[cmcount - 1] = parsed;
