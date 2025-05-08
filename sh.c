@@ -25,10 +25,11 @@ int main() {
     unsigned long int cmcount = 0;
     int ch = EOF;
     struct sigaction s;
+    struct sigaction schild;
     s.sa_handler = siginthd;
     sigemptyset(&s.sa_mask);
     s.sa_flags = SA_RESTART;
-    sigaction(SIGINT, &s, NULL);
+    sigaction(SIGINT, &s, &schild);
     while(1) {
         if(sigsetjmp(env, 1)) {
             putchar('\n');
@@ -66,7 +67,7 @@ int main() {
                 exit(1);
             }
             if(!child) {
-                signal(SIGINT, SIG_DFL);
+                sigaction(SIGINT, &schild, NULL);
                 if(execvp(command[0], command) < 0) {
                     perror(command[0]);
                     exit(1);
