@@ -9,8 +9,8 @@
 int main() {
     char* input = NULL;
     char** command = NULL;
-    unsigned long long int ccount = 0;
-    unsigned long long int cmcount = 0;
+    unsigned long int ccount = 0;
+    unsigned long int cmcount = 0;
     int ch = EOF;
     signal(SIGINT, SIG_IGN);
     while(1) {
