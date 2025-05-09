@@ -25,7 +25,7 @@ int main() {
         }
         input = (char*)realloc(input, ccount + 1);
         input[ccount] = '\0';
-        char* parsed = strtok(input, " "); // First time using this too
+        char* parsed = strtok(input, " "); // First time using this
         while(parsed) {
             command = (char**)realloc(command, ++cmcount * sizeof(char*));
             command[cmcount - 1] = parsed;
