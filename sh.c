@@ -3,57 +3,70 @@
 #include <sys/wait.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
 #include <signal.h>
-#include <fcntl.h>
+
+/*
+Get user input. Caller must free array.
+On CTRL+D (EOF), frees array and returns NULL.
+*/
+char* getuserin() {
+    char* r = NULL;
+    char c = 0;
+    unsigned long int count = 0;
+    while(1) {
+        int ret = read(0, &c, 1);
+        if(ret <= 0) {
+            if(r) {
+                free(r);
+            }
+            if(ret < 0) {
+                perror("read");
+                exit(1);
+            }
+            return NULL;
+        }
+        if(c == '\n') break;
+        r = (char*)realloc(r, (++count) + 1);
+        r[count - 1] = c;
+    }
+    r[count] = 0;
+    return r;
+}
+
+/*
+Parse an input string into an array of arguments. Caller must free array.
+*/
+char** parsecmd(char* s) {
+    char** r = NULL;
+    char* parsed = strtok(s, " ");
+    unsigned long int count = 0;
+    while(parsed) {
+        r = (char**)realloc(r, ((++count) + 1) * sizeof(char*));
+        r[count - 1] = parsed;
+        parsed = strtok(NULL, " ");
+    }
+    r[count] = NULL;
+    return r;
+}
+
+const char prompt[2] = {'>', ' '};
 
 int main() {
     char* input = NULL;
     char** command = NULL;
-    unsigned long int ccount = 0;
-    unsigned long int cmcount = 0;
-    int ch = EOF;
     signal(SIGINT, SIG_IGN);
     while(1) {
-        fputs("> ", stdout);
-        while((ch = fgetc(stdin)) != '\n') {
-            if(ch == EOF) {
-                putchar('\n');
-                exit(1);
-            }
-            input = (char*)realloc(input, ++ccount);
-            input[ccount - 1] = (char)ch;
+        write(1, prompt, 2);
+        if(!(input = getuserin())) {
+            putchar('\n');
+            exit(1);
         }
-        input = (char*)realloc(input, ccount + 1);
-        input[ccount] = '\0';
-        char* parsed = strtok(input, " "); // First time using this
-        while(parsed) {
-            command = (char**)realloc(command, ++cmcount * sizeof(char*));
-            command[cmcount - 1] = parsed;
-            parsed = strtok(NULL, " ");
-        }
-        char* fileout = NULL;
-        for(unsigned long int i = 1; i < cmcount; i++) {
-            if(!strcmp(command[i], ">")) {
-                fileout = command[i + 1];
-                cmcount -= 2;
-                command = (char**)realloc(command, cmcount * sizeof(char*));
-                break;
-            }
-        }
-        command = (char**)realloc(command, (cmcount + 1) * sizeof(char*));
-        command[cmcount] = NULL;
+        command = parsecmd(input);
         if(!strcmp(command[0], "cd")) {
-            if(cmcount != 1) {
-                if(chdir(command[1]) < 0) {
-                    perror(command[1]);
-                }
+            if(chdir(command[1]) < 0) {
+                perror(command[1]);
             }
         } else {
-            int filefd;
-            if(fileout) {
-                filefd = open(fileout, O_WRONLY | O_CREAT | O_TRUNC, 0666);
-            }
             pid_t child = fork();
             if(child < 0) {
                 perror("failed to fork");
@@ -61,9 +74,6 @@ int main() {
             }
             if(!child) {
                 signal(SIGINT, SIG_DFL);
-                if(fileout) {
-                    dup2(filefd, 1);
-                }
                 if(execvp(command[0], command) < 0) {
                     perror(command[0]);
                     exit(1);
@@ -72,14 +82,9 @@ int main() {
                 int stateloc;
                 waitpid(child, &stateloc, WUNTRACED);
             }
-            close(filefd);
         }
         free(command);
         free(input);
-        command = NULL;
-        input = NULL;
-        ccount = 0;
-        cmcount = 0;
     }
     return 0;
 }
