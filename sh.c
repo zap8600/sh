@@ -34,18 +34,31 @@ char* getuserin() {
 }
 
 /*
-Parse an input string into an array of arguments. Caller must free array.
+Parse an input string into an array of commands and their arguments. Caller must free array.
+Does not check if pipes is NULL.
+Does not check for command after a pipe, just assumes.
 */
-char** parsecmd(char* s) {
-    char** r = NULL;
+char*** parsecmd(char* s, unsigned long int* pipes) {
+    char*** r = NULL;
+    *pipes = 0;
     char* parsed = strtok(s, " ");
     unsigned long int count = 0;
+    unsigned long int commands = 1;
+    r = (char***)malloc(sizeof(char**));
+    r[0] = NULL;
     while(parsed) {
-        r = (char**)realloc(r, ((++count) + 1) * sizeof(char*));
-        r[count - 1] = parsed;
+        if(!strcmp(parsed, "|")) {
+            r[commands - 1][count] = NULL;
+            r = (char***)realloc(r, ++commands * sizeof(char**));
+            r[commands - 1] = NULL;
+            (*pipes)++;
+            count = 0;
+        } else {
+            r[commands - 1] = (char**)realloc(r[commands - 1], ((++count) + 1) * sizeof(char*));
+            r[commands - 1][count - 1] = parsed;
+        }
         parsed = strtok(NULL, " ");
     }
-    r[count] = NULL;
     return r;
 }
 
@@ -53,7 +66,8 @@ const char prompt[2] = {'>', ' '};
 
 int main() {
     char* input = NULL;
-    char** command = NULL;
+    char*** command = NULL;
+    unsigned long int pipes = 0;
     signal(SIGINT, SIG_IGN);
     while(1) {
         write(1, prompt, 2);
@@ -61,7 +75,7 @@ int main() {
             putchar('\n');
             exit(1);
         }
-        command = parsecmd(input);
+        command = parsecmd(input, &pipes);
         if(!strcmp(command[0], "cd")) {
             if(chdir(command[1]) < 0) {
                 perror(command[1]);
