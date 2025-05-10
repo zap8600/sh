@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <signal.h>
+#include <fcntl.h>
 
 int main() {
     char* input = NULL;
@@ -31,6 +32,15 @@ int main() {
             command[cmcount - 1] = parsed;
             parsed = strtok(NULL, " ");
         }
+        char* fileout = NULL;
+        for(unsigned long int i = 1; i < cmcount; i++) {
+            if(!strcmp(command[i], ">")) {
+                fileout = command[i + 1];
+                cmcount -= 2;
+                command = (char**)realloc(command, cmcount * sizeof(char*));
+                break;
+            }
+        }
         command = (char**)realloc(command, (cmcount + 1) * sizeof(char*));
         command[cmcount] = NULL;
         if(!strcmp(command[0], "cd")) {
@@ -40,6 +50,10 @@ int main() {
                 }
             }
         } else {
+            int filefd;
+            if(fileout) {
+                filefd = open(fileout, O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            }
             pid_t child = fork();
             if(child < 0) {
                 perror("failed to fork");
@@ -47,6 +61,9 @@ int main() {
             }
             if(!child) {
                 signal(SIGINT, SIG_DFL);
+                if(fileout) {
+                    dup2(filefd, 1);
+                }
                 if(execvp(command[0], command) < 0) {
                     perror(command[0]);
                     exit(1);
@@ -55,6 +72,7 @@ int main() {
                 int stateloc;
                 waitpid(child, &stateloc, WUNTRACED);
             }
+            close(filefd);
         }
         free(command);
         free(input);
