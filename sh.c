@@ -81,7 +81,26 @@ int main() {
                 perror(command[0][1]);
             }
         } else {
-            // TODO: Write code that can fork into into any amount of processes and support any amount of pipes
+            int** pipefds = NULL;
+            if(pipes) {
+                pipefds = (int**)malloc(pipes * sizeof(int*));
+                for(unsigned long int i = 0; i < pipes; i++) {
+                    pipefds[i] = (int*)malloc(2 * sizeof(int));
+                }
+            }
+            for(unsigned long int i = 0; i <= pipes; i++) {
+                if(!fork()) {
+                    signal(SIGINT, SIG_DFL);
+                    if(pipes) {
+                        if(i > 0) {
+                            dup2(pipefds[i - 1][0], 0);
+                        }
+                        if(i < pipes) {
+                            dup2(pipes, 0);
+                        }
+                    }
+                }
+            }
         }
         free(command);
         free(input);
