@@ -76,26 +76,12 @@ int main() {
             exit(1);
         }
         command = parsecmd(input, &pipes);
-        if(!strcmp(command[0], "cd")) {
-            if(chdir(command[1]) < 0) {
-                perror(command[1]);
+        if(!strcmp(command[0][0], "cd")) {
+            if(chdir(command[0][1]) < 0) {
+                perror(command[0][1]);
             }
         } else {
-            pid_t child = fork();
-            if(child < 0) {
-                perror("failed to fork");
-                exit(1);
-            }
-            if(!child) {
-                signal(SIGINT, SIG_DFL);
-                if(execvp(command[0], command) < 0) {
-                    perror(command[0]);
-                    exit(1);
-                }
-            } else {
-                int stateloc;
-                waitpid(child, &stateloc, WUNTRACED);
-            }
+            // TODO: Write code that can fork into into any amount of processes and support any amount of pipes
         }
         free(command);
         free(input);
