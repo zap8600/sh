@@ -81,13 +81,6 @@ int main() {
                 perror(command[0][1]);
             }
         } else {
-            printf("commands: %lu\n", pipes + 1);
-            for(unsigned long int i = 0; i <= pipes; i++) {
-                for(unsigned long int j = 0; command[i][j] != NULL; j++) {
-                    printf("%s ", command[i][j]);
-                }
-                putchar('\n');
-            }
             int** pipefds = NULL;
             if(pipes) {
                 pipefds = (int**)malloc(pipes * sizeof(int*));
@@ -118,12 +111,14 @@ int main() {
                 wait(NULL);
                 printf("program %s terminated\n", command[i][0]);
             }
-            for(unsigned long int i = 0; i < pipes; i++) {
-                close(pipefds[i][0]);
-                close(pipefds[i][1]);
-                free(pipefds[i]);
+            if(pipes) {
+                for(unsigned long int i = 0; i < pipes; i++) {
+                    close(pipefds[i][0]);
+                    close(pipefds[i][1]);
+                    free(pipefds[i]);
+                }
+                free(pipefds);
             }
-            free(pipefds);
         }
         for(unsigned long int i = 0; i <= pipes; i++) {
             free(command[i]);
