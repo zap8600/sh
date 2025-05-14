@@ -89,6 +89,7 @@ int main() {
                 }
             }
             for(unsigned long int i = 0; i <= pipes; i++) {
+                // TODO: Handle fork error
                 if(!fork()) {
                     signal(SIGINT, SIG_DFL);
                     if(pipes) {
@@ -96,11 +97,21 @@ int main() {
                             dup2(pipefds[i - 1][0], 0);
                         }
                         if(i < pipes) {
-                            dup2(pipes, 0);
+                            dup2(pipefds[i][1], 1);
                         }
+                    }
+                    if(execvp(command[i][0], command[i]) < 0) {
+                        perror(command[i][0]);
+                        exit(1);
                     }
                 }
             }
+            for(unsigned long int i = 0; i <= pipes; i++) {
+                wait(NULL);
+            }
+        }
+        for(unsigned long int i = 0; i <= pipes; i++) {
+            free(command[i]);
         }
         free(command);
         free(input);
