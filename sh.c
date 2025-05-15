@@ -91,7 +91,8 @@ int main() {
             }
             for(unsigned long int i = 0; i <= pipes; i++) {
                 // TODO: Handle fork error
-                if(!fork()) {
+                pid_t child = fork();
+                if(!child) {
                     signal(SIGINT, SIG_DFL);
                     if(pipes) {
                         if(i > 0) {
@@ -100,16 +101,16 @@ int main() {
                         if(i < pipes) {
                             dup2(pipefds[i][1], 1);
                         }
+                        for(unsigned long int j = 0; j < pipes; j++) {
+                            close(pipefds[j][0]);
+                            close(pipefds[j][1]);
+                        }
                     }
                     if(execvp(command[i][0], command[i]) < 0) {
                         perror(command[i][0]);
                         exit(1);
                     }
                 }
-            }
-            for(unsigned long int i = 0; i <= pipes; i++) {
-                wait(NULL);
-                printf("program %s terminated\n", command[i][0]);
             }
             if(pipes) {
                 for(unsigned long int i = 0; i < pipes; i++) {
@@ -118,6 +119,9 @@ int main() {
                     free(pipefds[i]);
                 }
                 free(pipefds);
+            }
+            for(unsigned long int i = 0; i <= pipes; i++) {
+                wait(NULL);
             }
         }
         for(unsigned long int i = 0; i <= pipes; i++) {
