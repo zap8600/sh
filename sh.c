@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <dirent.h>
 
 /*
 Get user input. Caller must free array.
@@ -79,6 +80,25 @@ int main() {
         if(!strcmp(command[0][0], "cd")) {
             if(chdir(command[0][1]) < 0) {
                 perror(command[0][1]);
+            }
+        } else if(!strcmp(command[0][0], "dir")) { // Made so that I can list files on Windows without ls
+            unsigned long int argcount = 0;
+            while(command[0][argcount]) {
+                argcount++;
+            }
+            char* tardir = ".";
+            if(argcount == 2) {
+                tardir = command[0][1];
+            }
+            DIR* tdir = opendir(tardir);
+            if(!tdir) {
+                perror(command[0][1]);
+            } else {
+                struct dirent* entry;
+                while(entry = readdir(tdir)) {
+                    puts(entry->d_name);
+                }
+                closedir(tdir);
             }
         } else {
             printf("%lu commands\n", pipes + 1);
