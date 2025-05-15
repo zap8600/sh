@@ -81,6 +81,14 @@ int main() {
                 perror(command[0][1]);
             }
         } else {
+            printf("%lu commands\n", pipes + 1);
+            for(unsigned long int i = 0; i <= pipes; i++) {
+                unsigned long int j = 0;
+                while(command[i][j]) {
+                    printf("%s ", command[i][j++]);
+                }
+                putchar('\n');
+            }
             int** pipefds = NULL;
             if(pipes) {
                 pipefds = (int**)malloc(pipes * sizeof(int*));
